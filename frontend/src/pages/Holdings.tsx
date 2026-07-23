@@ -8,6 +8,29 @@ import { money, num, pct, signClass } from "../format";
 
 const UNIT_PRICED = ["MF", "Stocks", "NPS", "Crypto"];
 
+type SortKey =
+  | "name"
+  | "asset_class"
+  | "units"
+  | "latest_price"
+  | "invested"
+  | "current_value"
+  | "gain"
+  | "xirr_pct"
+  | "txn_count";
+
+const SORT_COLUMNS: { key: SortKey; label: string; num: boolean }[] = [
+  { key: "name", label: "Name", num: false },
+  { key: "asset_class", label: "Class", num: false },
+  { key: "units", label: "Units", num: true },
+  { key: "latest_price", label: "Latest", num: true },
+  { key: "invested", label: "Invested", num: true },
+  { key: "current_value", label: "Current", num: true },
+  { key: "gain", label: "Gain", num: true },
+  { key: "xirr_pct", label: "XIRR", num: true },
+  { key: "txn_count", label: "Txns", num: true },
+];
+
 export default function Holdings() {
   const { selectedId } = useProfiles();
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
@@ -16,6 +39,8 @@ export default function Holdings() {
   const [editing, setEditing] = useState<Holding | null>(null);
   const [creating, setCreating] = useState(false);
   const [txnFor, setTxnFor] = useState<HoldingMetric | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>("current_value");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   async function reload() {
     if (!selectedId) return;
@@ -30,9 +55,35 @@ export default function Holdings() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
-  const rows = (analytics?.holdings ?? []).filter(
-    (h) => filter === "All" || h.asset_class === filter
-  );
+  const rows = (analytics?.holdings ?? [])
+    .filter((h) => filter === "All" || h.asset_class === filter)
+    .slice()
+    .sort((a, b) => {
+      const av = a[sortKey];
+      const bv = b[sortKey];
+      let cmp: number;
+      if (typeof av === "string" || typeof bv === "string") {
+        cmp = String(av ?? "").localeCompare(String(bv ?? ""));
+      } else {
+        // null/undefined always sort to the bottom regardless of direction
+        const an = av == null;
+        const bn = bv == null;
+        if (an && bn) cmp = 0;
+        else if (an) return 1;
+        else if (bn) return -1;
+        else cmp = (av as number) - (bv as number);
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir(key === "name" || key === "asset_class" ? "asc" : "desc");
+    }
+  }
 
   async function delHolding(id: number) {
     if (!confirm("Delete this holding and all its transactions?")) return;
@@ -77,15 +128,20 @@ export default function Holdings() {
             <table>
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Class</th>
-                  <th className="num">Units</th>
-                  <th className="num">Latest</th>
-                  <th className="num">Invested</th>
-                  <th className="num">Current</th>
-                  <th className="num">Gain</th>
-                  <th className="num">XIRR</th>
-                  <th className="num">Txns</th>
+                  {SORT_COLUMNS.map((col) => (
+                    <th
+                      key={col.key}
+                      className={`sortable ${col.num ? "num" : ""} ${
+                        sortKey === col.key ? "sorted" : ""
+                      }`}
+                      onClick={() => toggleSort(col.key)}
+                    >
+                      {col.label}
+                      <span className="sort-arrow">
+                        {sortKey === col.key ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
+                      </span>
+                    </th>
+                  ))}
                   <th></th>
                 </tr>
               </thead>

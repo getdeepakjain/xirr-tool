@@ -157,6 +157,10 @@ th, td { text-align: left; padding: 0.6rem 0.7rem; border-bottom: 1px solid var(
 th { color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; }
 tbody tr:hover { background: var(--surface-2); }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { color: var(--text); }
+th.sorted { color: var(--primary); }
+.sort-arrow { font-size: 0.7em; }
 
 .badge {
   display: inline-block;

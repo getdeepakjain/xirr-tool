@@ -10,7 +10,7 @@ if (-not (Test-Path ".venv")) {
 }
 if (-not (Test-Path ".env")) {
     Copy-Item ".env.example" ".env"
-    Write-Host "Created backend/.env from example — set a strong SECRET_KEY." -ForegroundColor Yellow
+    Write-Host "Created backend/.env from example - set a strong SECRET_KEY." -ForegroundColor Yellow
 }
 
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
