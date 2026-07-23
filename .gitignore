@@ -1,0 +1,46 @@
+# ---- Python / backend ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Databases / local data
+*.sqlite3
+*.db
+backend/data/*.sqlite3
+backend/data/*.db
+
+# Uploaded files
+backend/uploads/
+
+# Secrets / env
+.env
+*.env
+!*.env.example
+
+# ---- Node / frontend ----
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.local
+
+# TypeScript build output emitted by `tsc -b`
+*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Keep sample upload format but ignore ad-hoc user uploads at root
+/*.xlsx
+!Upload Format.xlsx
