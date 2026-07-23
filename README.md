@@ -24,6 +24,12 @@ whole portfolio — plus automated insights on what's doing well and what needs 
   concentration risk, low diversification, stop-loss breaches, and overall health.
 - **Auth** — email/password (JWT) **or** "Continue with Google" (OAuth 2.0).
 - **Dashboard** — allocation pie, XIRR-by-class bar chart, and summary tables.
+- **Sortable holdings** — click any column header on the Holdings page to sort.
+- **CSV export** — download holdings and transactions as CSV from the Holdings page.
+- **Market price refresh** — one click pulls the latest MF NAV (AMFI), stock price
+  (Yahoo Finance) and crypto price (CoinGecko, in INR) for unit-priced holdings.
+- **Automated tests** — a `pytest` suite covering XIRR, valuation, the Excel importer,
+  price matching, and the REST API.
 
 ## Tech stack
 
@@ -45,7 +51,10 @@ xirr-tool/
 │  │  ├─ xirr.py            # XIRR solver (pyxirr + pure-python fallback)
 │  │  ├─ valuation.py       # invested / current value / cash flows
 │  │  ├─ insights.py        # rule-based recommendations
-│  │  └─ routers/           # auth, profiles, holdings, transactions, uploads, analytics
+│  │  ├─ prices.py          # market price refresh (AMFI / Yahoo / CoinGecko)
+│  │  └─ routers/           # auth, profiles, holdings, transactions, uploads,
+│  │                        #   analytics, exports (CSV), market (price refresh)
+│  ├─ tests/                # pytest suite (offline)
 │  ├─ requirements.txt
 │  └─ .env.example
 ├─ frontend/
@@ -90,6 +99,16 @@ npm run dev
 
 Open `http://localhost:5173`, create an account, then go to **Upload Excel** and drop in
 `Upload Format.xlsx`.
+
+### Running the tests
+
+```bash
+cd backend
+.\.venv\Scripts\python.exe -m pytest      # macOS/Linux: python -m pytest
+```
+
+The suite uses an isolated throwaway SQLite database and stubs out all network calls, so it
+runs fully offline.
 
 ### 3. (Optional) Google login
 

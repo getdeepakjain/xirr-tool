@@ -92,6 +92,21 @@ export interface ImportSummary {
   errors: string[];
 }
 
+export interface PriceRefreshResult {
+  holding_id: number;
+  name: string;
+  asset_class: string;
+  old_price: number | null;
+  new_price: number | null;
+  status: "updated" | "unchanged" | "not_found" | "error";
+  detail: string;
+}
+
+export interface PriceRefreshResponse {
+  counts: Record<string, number>;
+  results: PriceRefreshResult[];
+}
+
 export const ASSET_CLASSES = [
   "MF",
   "Stocks",

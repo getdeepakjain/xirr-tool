@@ -100,6 +100,15 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
 }
 
 .error-msg { color: var(--red); font-size: 0.85rem; margin: 0.5rem 0; }
+.notice {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.85rem;
+  color: var(--text);
+}
 .link-btn { background: none; border: none; color: var(--primary); padding: 0; }
 
 /* ---------- Layout ---------- */

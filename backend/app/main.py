@@ -5,7 +5,16 @@ from starlette.middleware.sessions import SessionMiddleware
 from .config import settings
 from .constants import ASSET_CLASSES
 from .database import init_db
-from .routers import analytics, auth, holdings, profiles, transactions, uploads
+from .routers import (
+    analytics,
+    auth,
+    exports,
+    holdings,
+    market,
+    profiles,
+    transactions,
+    uploads,
+)
 
 app = FastAPI(title="Portfolio XIRR Tracker", version="1.0.0")
 
@@ -36,3 +45,5 @@ app.include_router(holdings.router)
 app.include_router(transactions.router)
 app.include_router(uploads.router)
 app.include_router(analytics.router)
+app.include_router(exports.router)
+app.include_router(market.router)

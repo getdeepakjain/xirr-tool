@@ -3,7 +3,13 @@ import api, { apiError } from "../api";
 import Modal from "../components/Modal";
 import { useProfiles } from "../profileStore";
 import { ASSET_CLASSES } from "../types";
-import type { Analytics, Holding, HoldingMetric, Transaction } from "../types";
+import type {
+  Analytics,
+  Holding,
+  HoldingMetric,
+  PriceRefreshResponse,
+  Transaction,
+} from "../types";
 import { money, num, pct, signClass } from "../format";
 
 const UNIT_PRICED = ["MF", "Stocks", "NPS", "Crypto"];
@@ -41,6 +47,8 @@ export default function Holdings() {
   const [txnFor, setTxnFor] = useState<HoldingMetric | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("current_value");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [refreshing, setRefreshing] = useState(false);
+  const [notice, setNotice] = useState<string>("");
 
   async function reload() {
     if (!selectedId) return;
@@ -97,14 +105,72 @@ export default function Holdings() {
     setEditing(h);
   }
 
+  async function downloadCsv(kind: "holdings" | "transactions") {
+    if (!selectedId) return;
+    try {
+      const { data } = await api.get(
+        `/api/profiles/${selectedId}/export/${kind}.csv`,
+        { responseType: "blob" }
+      );
+      const url = URL.createObjectURL(new Blob([data], { type: "text/csv" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${kind}_${selectedId}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setNotice(apiError(err, "Export failed"));
+    }
+  }
+
+  async function refreshPrices() {
+    if (!selectedId) return;
+    setRefreshing(true);
+    setNotice("");
+    try {
+      const { data } = await api.post<PriceRefreshResponse>(
+        `/api/profiles/${selectedId}/refresh-prices`
+      );
+      const c = data.counts;
+      setNotice(
+        `Prices refreshed - ${c.updated ?? 0} updated, ${c.unchanged ?? 0} unchanged, ` +
+          `${c.not_found ?? 0} not found, ${c.error ?? 0} errored.`
+      );
+      await reload();
+    } catch (err) {
+      setNotice(apiError(err, "Price refresh failed"));
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   return (
     <>
       <div className="panel-head">
         <h1>Holdings</h1>
-        <button className="btn btn-primary" onClick={() => setCreating(true)}>
-          + Add Holding
-        </button>
+        <div className="row-actions">
+          <button className="btn" disabled={refreshing} onClick={refreshPrices}>
+            {refreshing ? "Refreshing…" : "↻ Refresh prices"}
+          </button>
+          <button className="btn" onClick={() => downloadCsv("holdings")}>
+            ⬇ Holdings CSV
+          </button>
+          <button className="btn" onClick={() => downloadCsv("transactions")}>
+            ⬇ Transactions CSV
+          </button>
+          <button className="btn btn-primary" onClick={() => setCreating(true)}>
+            + Add Holding
+          </button>
+        </div>
       </div>
+
+      {notice && (
+        <div className="notice" style={{ marginBottom: "1rem" }}>
+          {notice}
+        </div>
+      )}
 
       <div className="chip-row" style={{ marginBottom: "1rem" }}>
         {["All", ...ASSET_CLASSES].map((c) => (
