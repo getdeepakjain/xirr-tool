@@ -31,9 +31,19 @@ api.interceptors.response.use(
 
 export function apiError(err: unknown, fallback = "Something went wrong"): string {
   if (axios.isAxiosError(err)) {
-    const detail = err.response?.data?.detail;
+    // No response at all -> network failure or CORS block (browser hid the body).
+    if (!err.response) {
+      return "Cannot reach the backend. Check that VITE_BACKEND_URL points to your API and that the backend's FRONTEND_ORIGINS allows this site.";
+    }
+    const { status, data } = err.response;
+    const detail = (data as { detail?: unknown } | undefined)?.detail;
     if (typeof detail === "string") return detail;
     if (Array.isArray(detail)) return detail.map((d) => d.msg || String(d)).join(", ");
+    // Got a response but not the JSON we expected (e.g. HTML from a misrouted
+    // request when VITE_BACKEND_URL is unset and the SPA rewrite answered).
+    if (typeof data === "string" || status === 404 || status === 405) {
+      return `Unexpected response (HTTP ${status}) from the API URL. Verify VITE_BACKEND_URL is set to the backend origin and redeploy.`;
+    }
   }
   return fallback;
 }
