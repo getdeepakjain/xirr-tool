@@ -118,6 +118,13 @@ runs fully offline.
 3. Put `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `backend/.env` and restart the API.
    The "Continue with Google" button appears automatically.
 
+## Deployment
+
+Host the frontend on **Vercel (Hobby)** and the backend on **Render / Railway /
+Fly.io** (persistent SQLite volume, or managed Postgres). Config files are
+included (`frontend/vercel.json`, `backend/Dockerfile`, `backend/fly.toml`,
+`render.yaml`). See **[DEPLOYMENT.md](DEPLOYMENT.md)** for the full step-by-step.
+
 ## How XIRR is computed
 
 Each holding produces a list of dated cash flows:

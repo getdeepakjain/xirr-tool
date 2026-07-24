@@ -29,6 +29,9 @@ frontend/dist/
 frontend/.vite/
 *.local
 
+# ---- Deploy ----
+.vercel/
+
 # TypeScript build output emitted by `tsc -b`
 *.tsbuildinfo
 frontend/vite.config.js

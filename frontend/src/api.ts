@@ -1,8 +1,14 @@
 import axios from "axios";
 
-export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+// Absolute base URL of the backend API.
+// - Local dev: leave VITE_BACKEND_URL unset -> "" -> requests are same-origin
+//   and handled by the Vite dev proxy (see vite.config.ts).
+// - Production (e.g. frontend on Vercel, backend on Render/Railway/Fly): set
+//   VITE_BACKEND_URL to the deployed backend origin; calls go there directly
+//   (CORS is allowed via the backend's FRONTEND_ORIGINS setting).
+export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "";
 
-const api = axios.create({ baseURL: "/" });
+const api = axios.create({ baseURL: BACKEND_URL || "/" });
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
