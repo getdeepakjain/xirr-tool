@@ -3,8 +3,10 @@
 #
 # NOTE: Persistent disks (the `disk:` block below) require a paid instance
 # (Starter or higher). On Render's FREE tier, remove the `disk:` block and use a
-# managed Postgres instead — set DATABASE_URL to the Postgres connection string
-# (postgresql+psycopg://...) and add "psycopg[binary]" to requirements.
+# managed Postgres instead (e.g. Neon) — just set DATABASE_URL to the Postgres
+# connection string. The psycopg v3 driver is already bundled in requirements.txt,
+# and plain postgres:// / postgresql:// URLs are auto-adapted, so no other change
+# is needed.
 services:
   - type: web
     name: xirr-backend

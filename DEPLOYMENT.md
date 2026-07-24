@@ -112,10 +112,13 @@ Then open the Vercel URL, register, and confirm uploads / analytics work.
 
 ## Using Postgres instead of SQLite
 
-For a fully free Render setup (or any managed Postgres):
+For a fully free Render setup (or any managed Postgres such as Neon/Supabase):
 
-1. Add the driver to `backend/requirements.txt`: `psycopg[binary]>=3.2`.
-2. Set `DATABASE_URL=postgresql+psycopg://USER:PASSWORD@HOST:5432/DBNAME`.
+1. The `psycopg` (v3) driver is already in `backend/requirements.txt`.
+2. Set `DATABASE_URL` to the provider's connection string as-is, e.g.
+   `postgresql://USER:PASSWORD@HOST/DBNAME?sslmode=require`.
+   Plain `postgres://` / `postgresql://` URLs are auto-adapted to psycopg v3 at
+   startup, so you don't need to hand-edit the driver in the URL.
 
 SQLAlchemy handles the rest; the schema is created automatically on startup.
 

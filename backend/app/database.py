@@ -22,10 +22,26 @@ def _prepare_sqlite_path(url: str) -> None:
                 os.makedirs(directory, exist_ok=True)
 
 
-_prepare_sqlite_path(settings.database_url)
+def _normalize_db_url(url: str) -> str:
+    """Normalize a database URL to a driver SQLAlchemy has installed.
 
-connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
-engine = create_engine(settings.database_url, connect_args=connect_args, future=True)
+    Managed Postgres providers (Neon, Render, Supabase, Heroku) hand out plain
+    ``postgres://`` / ``postgresql://`` URLs, which make SQLAlchemy default to the
+    unmaintained ``psycopg2`` driver. We ship ``psycopg`` (v3) instead, so rewrite
+    those to the explicit ``postgresql+psycopg://`` form.
+    """
+    if url.startswith("postgres://"):
+        return "postgresql+psycopg://" + url[len("postgres://"):]
+    if url.startswith("postgresql://"):
+        return "postgresql+psycopg://" + url[len("postgresql://"):]
+    return url
+
+
+DATABASE_URL = _normalize_db_url(settings.database_url)
+_prepare_sqlite_path(DATABASE_URL)
+
+connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+engine = create_engine(DATABASE_URL, connect_args=connect_args, future=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 
 
