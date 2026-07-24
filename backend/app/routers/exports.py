@@ -30,15 +30,15 @@ def _csv_response(rows: list[list], header: list[str], filename: str) -> Streami
 
 @router.get("/{profile_id}/export/holdings.csv")
 def export_holdings(
-    profile: Profile = Depends(get_owned_profile), db: Session = Depends(get_db)
+    asset_class: str | None = None,
+    profile: Profile = Depends(get_owned_profile),
+    db: Session = Depends(get_db),
 ):
     as_of = date.today()
-    holdings = (
-        db.query(Holding)
-        .filter(Holding.profile_id == profile.id)
-        .order_by(Holding.asset_class, Holding.name)
-        .all()
-    )
+    q = db.query(Holding).filter(Holding.profile_id == profile.id)
+    if asset_class:
+        q = q.filter(Holding.asset_class == asset_class)
+    holdings = q.order_by(Holding.asset_class, Holding.name).all()
     header = [
         "Asset Class", "Name", "Identifier", "Units", "Latest Price",
         "Invested", "Current Value", "Dividends", "Gain",
@@ -52,21 +52,25 @@ def export_holdings(
             m["latest_price"], m["invested"], m["current_value"], m["dividends"],
             m["gain"], m["absolute_return_pct"], m["xirr_pct"], m["txn_count"],
         ])
-    return _csv_response(rows, header, f"holdings_{profile.id}_{as_of.isoformat()}.csv")
+    suffix = f"_{asset_class}" if asset_class else ""
+    return _csv_response(rows, header, f"holdings{suffix}_{profile.id}_{as_of.isoformat()}.csv")
 
 
 @router.get("/{profile_id}/export/transactions.csv")
 def export_transactions(
-    profile: Profile = Depends(get_owned_profile), db: Session = Depends(get_db)
+    asset_class: str | None = None,
+    profile: Profile = Depends(get_owned_profile),
+    db: Session = Depends(get_db),
 ):
     as_of = date.today()
-    rows_q = (
+    q = (
         db.query(Transaction, Holding)
         .join(Holding, Transaction.holding_id == Holding.id)
         .filter(Holding.profile_id == profile.id)
-        .order_by(Holding.asset_class, Holding.name, Transaction.txn_date)
-        .all()
     )
+    if asset_class:
+        q = q.filter(Holding.asset_class == asset_class)
+    rows_q = q.order_by(Holding.asset_class, Holding.name, Transaction.txn_date).all()
     header = [
         "Asset Class", "Holding", "Identifier", "Date", "Type", "Quantity",
         "Price", "Amount", "Charges", "Dividend", "Source", "Notes",
@@ -78,4 +82,5 @@ def export_transactions(
             txn.txn_type, txn.quantity, txn.price, txn.amount, txn.charges,
             txn.dividend, txn.source, txn.notes,
         ])
-    return _csv_response(rows, header, f"transactions_{profile.id}_{as_of.isoformat()}.csv")
+    suffix = f"_{asset_class}" if asset_class else ""
+    return _csv_response(rows, header, f"transactions{suffix}_{profile.id}_{as_of.isoformat()}.csv")

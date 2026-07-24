@@ -8,6 +8,7 @@ import type {
   Holding,
   HoldingMetric,
   PriceRefreshResponse,
+  PriceRefreshResult,
   Transaction,
 } from "../types";
 import { money, num, pct, signClass } from "../format";
@@ -49,6 +50,7 @@ export default function Holdings() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [refreshing, setRefreshing] = useState(false);
   const [notice, setNotice] = useState<string>("");
+  const [refreshLog, setRefreshLog] = useState<PriceRefreshResult[] | null>(null);
 
   async function reload() {
     if (!selectedId) return;
@@ -108,14 +110,16 @@ export default function Holdings() {
   async function downloadCsv(kind: "holdings" | "transactions") {
     if (!selectedId) return;
     try {
+      const params = filter !== "All" ? { asset_class: filter } : undefined;
       const { data } = await api.get(
         `/api/profiles/${selectedId}/export/${kind}.csv`,
-        { responseType: "blob" }
+        { responseType: "blob", params }
       );
       const url = URL.createObjectURL(new Blob([data], { type: "text/csv" }));
+      const suffix = filter !== "All" ? `_${filter}` : "";
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${kind}_${selectedId}.csv`;
+      a.download = `${kind}${suffix}_${selectedId}.csv`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -129,6 +133,7 @@ export default function Holdings() {
     if (!selectedId) return;
     setRefreshing(true);
     setNotice("");
+    setRefreshLog(null);
     try {
       const { data } = await api.post<PriceRefreshResponse>(
         `/api/profiles/${selectedId}/refresh-prices`
@@ -138,6 +143,11 @@ export default function Holdings() {
         `Prices refreshed - ${c.updated ?? 0} updated, ${c.unchanged ?? 0} unchanged, ` +
           `${c.not_found ?? 0} not found, ${c.error ?? 0} errored.`
       );
+      // Surface problems (errors / unmatched) first so they're easy to see.
+      const order: Record<string, number> = { error: 0, not_found: 1, updated: 2, unchanged: 3 };
+      setRefreshLog(
+        [...data.results].sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9))
+      );
       await reload();
     } catch (err) {
       setNotice(apiError(err, "Price refresh failed"));
@@ -145,6 +155,10 @@ export default function Holdings() {
       setRefreshing(false);
     }
   }
+
+  const refreshProblems = (refreshLog ?? []).filter(
+    (r) => r.status === "error" || r.status === "not_found"
+  );
 
   return (
     <>
@@ -155,10 +169,10 @@ export default function Holdings() {
             {refreshing ? "Refreshing…" : "↻ Refresh prices"}
           </button>
           <button className="btn" onClick={() => downloadCsv("holdings")}>
-            ⬇ Holdings CSV
+            ⬇ Holdings CSV{filter !== "All" ? ` (${filter})` : ""}
           </button>
           <button className="btn" onClick={() => downloadCsv("transactions")}>
-            ⬇ Transactions CSV
+            ⬇ Transactions CSV{filter !== "All" ? ` (${filter})` : ""}
           </button>
           <button className="btn btn-primary" onClick={() => setCreating(true)}>
             + Add Holding
@@ -169,6 +183,61 @@ export default function Holdings() {
       {notice && (
         <div className="notice" style={{ marginBottom: "1rem" }}>
           {notice}
+        </div>
+      )}
+
+      {refreshLog && refreshLog.length > 0 && (
+        <div className="panel" style={{ marginBottom: "1rem" }}>
+          <div className="panel-head">
+            <h3 style={{ margin: 0 }}>
+              Price refresh log
+              {refreshProblems.length > 0 && (
+                <span className="neg"> · {refreshProblems.length} need attention</span>
+              )}
+            </h3>
+            <button className="btn btn-sm btn-ghost" onClick={() => setRefreshLog(null)}>
+              Dismiss
+            </button>
+          </div>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Holding</th>
+                  <th>Class</th>
+                  <th className="num">Old</th>
+                  <th className="num">New</th>
+                  <th>Status</th>
+                  <th>Detail</th>
+                </tr>
+              </thead>
+              <tbody>
+                {refreshLog.map((r) => (
+                  <tr key={r.holding_id}>
+                    <td>{r.name}</td>
+                    <td>
+                      <span className="badge">{r.asset_class}</span>
+                    </td>
+                    <td className="num">{r.old_price != null ? num(r.old_price) : "—"}</td>
+                    <td className="num">{r.new_price != null ? num(r.new_price) : "—"}</td>
+                    <td>
+                      <span className={`status-pill ${r.status}`}>
+                        {r.status.replace("_", " ")}
+                      </span>
+                    </td>
+                    <td className="wrap-cell">
+                      <small>
+                        {r.detail ||
+                          (r.status === "not_found"
+                            ? "No market match for this holding's name/symbol."
+                            : "")}
+                      </small>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

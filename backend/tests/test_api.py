@@ -63,6 +63,26 @@ def test_export_holdings_and_transactions_csv(auth_client):
     assert "buy" in t_csv.text
 
 
+def test_export_respects_asset_class_filter(auth_client):
+    pid, _ = _create_mf_holding_with_txns(auth_client)
+    # Add a second holding in a different class.
+    auth_client.post(f"/api/profiles/{pid}/holdings", json={
+        "asset_class": "Crypto", "name": "Bitcoin", "identifier": "btc",
+        "latest_price": 100.0,
+    })
+
+    mf_only = auth_client.get(
+        f"/api/profiles/{pid}/export/holdings.csv", params={"asset_class": "MF"}
+    )
+    assert mf_only.status_code == 200
+    assert "Alpha Fund" in mf_only.text
+    assert "Bitcoin" not in mf_only.text
+
+    all_rows = auth_client.get(f"/api/profiles/{pid}/export/holdings.csv")
+    assert "Alpha Fund" in all_rows.text
+    assert "Bitcoin" in all_rows.text
+
+
 def test_refresh_prices_endpoint(auth_client, monkeypatch):
     pid, hid = _create_mf_holding_with_txns(auth_client)
 

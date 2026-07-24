@@ -27,7 +27,7 @@ export default function Layout() {
           </NavLink>
         ))}
         <div className="sidebar-footer">
-          <div style={{ fontSize: "0.85rem", marginBottom: "0.5rem" }}>
+          <div className="user-info" style={{ fontSize: "0.85rem", marginBottom: "0.5rem" }}>
             {user?.name || user?.email}
             <br />
             <small>{user?.email}</small>
